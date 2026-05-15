@@ -85,6 +85,49 @@ Classify every Figma asset before exporting. **Icons → Vector. Images → PNG 
 
 ---
 
+## Build Configuration (Mandatory — Read Before Writing Any Code)
+
+Before writing a single line of Kotlin, XML, or Gradle, you **must** read the module's `build.gradle` / `build.gradle.kts` and extract the active toolchain values. Every API, language feature, and library version you use must be compatible with what the build is configured for. Never assume defaults — read the file.
+
+### Required Reads
+1. **Root `build.gradle.kts`** (or `build.gradle`) — for project-wide plugin versions, Kotlin version, AGP version.
+2. **App / feature module `build.gradle.kts`** (typically `app/build.gradle.kts`) — for the values below.
+3. **`gradle/libs.versions.toml`** (if present) — resolve any version catalog alias referenced by the module file.
+
+### Values to Extract (read every time, do not cache across sessions)
+
+| Key | Where | What it controls |
+|---|---|---|
+| `compileSdk` | `android { compileSdk = ... }` | Max Android API you may reference. Never call an API above this level. |
+| `minSdk` | `android.defaultConfig.minSdk` | Lowest supported Android API. Any newer API requires `@RequiresApi` + runtime `Build.VERSION.SDK_INT` guard, or use AndroidX/Compat alternatives. |
+| `targetSdk` | `android.defaultConfig.targetSdk` | Behavior the app opts into. Honor permission, background, and storage rules for this level. |
+| `sourceCompatibility` / `targetCompatibility` | `android.compileOptions` | Max Java language level for Java sources and bytecode target. |
+| `jvmTarget` (Kotlin) | `kotlin { jvmToolchain(...) }` or `kotlinOptions.jvmTarget` | Kotlin → JVM bytecode level. Must align with `targetCompatibility`. |
+| `buildFeatures.compose` / `buildFeatures.viewBinding` | `android.buildFeatures` | Whether to ship Compose UI vs. XML + ViewBinding. |
+| Applied plugins | `plugins { }` block | E.g., `kotlin.plugin.serialization`, `ksp`, `kotlin.compose`. Required before using their annotations / generated code. |
+| Dependency aliases | `dependencies { }` + `libs.versions.toml` | Confirm the libraries you plan to use are already declared; if not, add them via the version catalog rather than hardcoding versions. |
+
+### Rules
+- **Read first, code second.** Open `app/build.gradle.kts` (and `libs.versions.toml` if used) before generating any source file. If the file is missing or unreadable, stop and report — do not guess.
+- **Never call APIs above `compileSdk`.** If the design requires a newer API, surface the conflict instead of bumping the SDK silently.
+- **Guard APIs above `minSdk`.** Wrap with `if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.X) { ... }` and annotate the method with `@RequiresApi(X)` where appropriate. Prefer AndroidX / `*Compat` equivalents when one exists.
+- **Match Java + Kotlin levels.** Generated Kotlin must compile against the `jvmTarget` in the module. Do not use language features beyond `sourceCompatibility` in Java sources. If `JavaVersion.VERSION_11` is set, do not emit Java 17-only syntax (records, pattern switches, etc.).
+- **Respect `targetSdk` runtime behavior.** Example: `targetSdk >= 33` requires `POST_NOTIFICATIONS` permission; `targetSdk >= 34` requires foreground service types; `targetSdk >= 31` requires explicit `PendingIntent` mutability flags. Apply the correct rule for the value you read.
+- **Honor the UI toolkit flag.** If `buildFeatures.compose = true`, deliver Compose UI (`@Composable` screens) instead of Fragment + XML — and adjust the Output Format file list accordingly (`presentation/ui/FeatureScreen.kt` replaces `FeatureFragment.kt`). If only `viewBinding = true`, deliver XML + Fragment.
+- **Use the version catalog.** When adding a dependency, add the alias to `libs.versions.toml` and reference it as `libs.<alias>` in `build.gradle.kts`. Do not hardcode `"group:artifact:version"` strings in the module file when a catalog exists.
+- **Verify required plugins are applied.** Before emitting `@Serializable`, confirm `org.jetbrains.kotlin.plugin.serialization` is in the `plugins { }` block. Before emitting Room or Moshi codegen, confirm `com.google.devtools.ksp` is applied. If a plugin is missing, add it (and report the change) — do not silently skip the annotation.
+
+### Echo Before Coding
+At the start of every implementation, print a one-line summary of what you read so the user can confirm. Example:
+
+```
+build.gradle.kts → compileSdk=36, minSdk=24, targetSdk=36, Java=11, Kotlin jvmTarget=11, compose=true, plugins=[android.application, kotlin.compose, ksp, kotlin.serialization]
+```
+
+If any value contradicts the story (e.g., story uses an API 33+ feature on `minSdk=24` without guarding), stop and flag it before generating code.
+
+---
+
 ## Architecture Layers
 
 ### Domain Layer (Pure Kotlin — no Android/framework imports)
@@ -167,9 +210,6 @@ viewModel.uiState.observe(viewLifecycleOwner) { state -> ... }
 ```kotlin
 // Every DTO is @Serializable (kotlinx.serialization) and ships with a toDomain() mapper.
 // Use @SerialName when the JSON key differs from the Kotlin property name.
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-
 @Serializable
 data class UserDto(
     @SerialName("id") val id: String,
