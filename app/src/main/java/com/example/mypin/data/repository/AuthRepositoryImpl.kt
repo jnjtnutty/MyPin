@@ -12,16 +12,13 @@ class AuthRepositoryImpl : AuthRepository {
     }
 
     override suspend fun login(email: String, password: String): Result<User> {
-        return try {
-            if (email.isBlank() || password.isBlank()) {
+        return when {
+            email.isBlank() || password.isBlank() ->
                 Result.failure(IllegalArgumentException("Email and password must not be empty"))
-            } else if (email == DEMO_EMAIL && password == DEMO_PASSWORD) {
+            email == DEMO_EMAIL && password == DEMO_PASSWORD ->
                 Result.success(User(email = email, displayName = DEMO_DISPLAY_NAME))
-            } else {
+            else ->
                 Result.failure(IllegalArgumentException("Invalid email or password"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
         }
     }
 }

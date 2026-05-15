@@ -47,16 +47,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewFontScale
 import androidx.compose.ui.tooling.preview.PreviewLightDark
@@ -74,7 +71,13 @@ private val InputBackground = Color(0x1AFFFFFF)
 private val InputBorder = Color(0x2EFFFFFF)
 private val SignInButtonBg = Color(0xFFFFFFFF)
 private val SignInButtonText = Color(0xFF141414)
-private val LogoBadgeBorder = Color(0x4DFFFFFF)
+private val ErrorText = Color(0xFFFF6B6B)
+
+private val GradientOverlayBrush = Brush.verticalGradient(
+    colors = listOf(Color.Transparent, Color.Transparent, Color(0xA6000000), Color(0xF0000000)),
+    startY = 0f,
+    endY = 1500f
+)
 
 @Composable
 fun LoginScreen(
@@ -99,23 +102,11 @@ fun LoginScreen(
         modifier = modifier
             .fillMaxSize()
             .background(BackgroundDark)
-            .imePadding()
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color(0xA6000000),
-                            Color(0xF0000000)
-                        ),
-                        startY = 0f,
-                        endY = 1500f
-                    )
-                )
+                .background(brush = GradientOverlayBrush)
         )
 
         Column(
@@ -183,7 +174,7 @@ fun LoginScreen(
             if (uiState is LoginUiState.Error) {
                 Text(
                     text = uiState.message,
-                    color = Color(0xFFFF6B6B),
+                    color = ErrorText,
                     fontSize = 13.sp,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -221,16 +212,8 @@ private fun LogoBadge() {
 
 @Composable
 private fun HeroTitle() {
-    val annotatedTitle = buildAnnotatedString {
-        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-            append("Your private\n")
-        }
-        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-            append("place diary.")
-        }
-    }
     Text(
-        text = annotatedTitle,
+        text = "Your private\nplace diary.",
         color = White,
         fontSize = 34.sp,
         lineHeight = 40.sp,
@@ -406,6 +389,76 @@ private fun DemoAccountLink(
             textDecoration = TextDecoration.Underline
         )
     }
+}
+
+@Preview
+@Composable
+private fun LogoBadgePreview() {
+    MyPinTheme { LogoBadge() }
+}
+
+@Preview
+@Composable
+private fun HeroTitlePreview() {
+    MyPinTheme { HeroTitle() }
+}
+
+@Preview
+@Composable
+private fun HeroSubtitlePreview() {
+    MyPinTheme { HeroSubtitle() }
+}
+
+@Preview
+@Composable
+private fun EmailFieldPreview() {
+    MyPinTheme { EmailField(email = "user@example.com", onEmailChange = {}) }
+}
+
+@Preview
+@Composable
+private fun PasswordFieldPreview() {
+    MyPinTheme {
+        PasswordField(
+            password = "secret",
+            onPasswordChange = {},
+            isPasswordVisible = false,
+            onTogglePasswordVisibility = {},
+            onDone = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun PasswordFieldVisiblePreview() {
+    MyPinTheme {
+        PasswordField(
+            password = "secret",
+            onPasswordChange = {},
+            isPasswordVisible = true,
+            onTogglePasswordVisibility = {},
+            onDone = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun SignInButtonPreview() {
+    MyPinTheme { SignInButton(enabled = true, onClick = {}) }
+}
+
+@Preview
+@Composable
+private fun SignInButtonDisabledPreview() {
+    MyPinTheme { SignInButton(enabled = false, onClick = {}) }
+}
+
+@Preview
+@Composable
+private fun DemoAccountLinkPreview() {
+    MyPinTheme { DemoAccountLink(onClick = {}) }
 }
 
 @PreviewLightDark

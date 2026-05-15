@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mypin.presentation.login.LoginScreen
@@ -31,7 +32,7 @@ class MainActivity : ComponentActivity() {
 private fun MainContent() {
     val loginViewModel: LoginViewModel = koinViewModel()
     val uiState by loginViewModel.uiState.collectAsStateWithLifecycle()
-    var isLoggedIn by mutableStateOf(false)
+    var isLoggedIn by remember { mutableStateOf(false) }
 
     if (isLoggedIn) {
         MapScreen()

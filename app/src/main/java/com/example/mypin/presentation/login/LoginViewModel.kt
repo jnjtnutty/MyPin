@@ -16,15 +16,12 @@ class LoginViewModel(
     val uiState: StateFlow<LoginUiState<Unit>> = _uiState.asStateFlow()
 
     fun login(email: String, password: String) {
+        if (_uiState.value is LoginUiState.Loading) return
         viewModelScope.launch {
             _uiState.value = LoginUiState.Loading
             loginUseCase.execute(email.trim(), password.trim())
                 .onSuccess { _uiState.value = LoginUiState.Success(Unit) }
                 .onFailure { _uiState.value = LoginUiState.Error(it.message ?: "Unknown error") }
         }
-    }
-
-    fun resetState() {
-        _uiState.value = LoginUiState.Idle
     }
 }

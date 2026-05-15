@@ -7,7 +7,7 @@ import com.example.mypin.presentation.login.LoginViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
-val appModule = module {
+val authModule = module {
     single<AuthRepository> { AuthRepositoryImpl() }
     factory { LoginUseCase(get()) }
     viewModel { LoginViewModel(get()) }
