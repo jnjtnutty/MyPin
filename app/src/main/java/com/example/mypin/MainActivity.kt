@@ -5,12 +5,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import com.example.mypin.ui.login.LoginScreen
+import com.example.mypin.ui.map.MapScreen
 import com.example.mypin.ui.theme.MyPinTheme
 
 class MainActivity : ComponentActivity() {
@@ -19,11 +20,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MyPinTheme {
-                Scaffold( modifier = Modifier.fillMaxSize() ) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    MyPinApp()
                 }
             }
         }
@@ -31,17 +29,18 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+fun MyPinApp() {
+    val isLoggedIn = remember { mutableStateOf(false) }
+    val loggedInEmail = remember { mutableStateOf("") }
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    MyPinTheme {
-        Greeting("Android")
+    if (isLoggedIn.value) {
+        MapScreen(email = loggedInEmail.value)
+    } else {
+        LoginScreen(
+            onLoginSuccess = { email ->
+                isLoggedIn.value = true
+                loggedInEmail.value = email
+            }
+        )
     }
 }
