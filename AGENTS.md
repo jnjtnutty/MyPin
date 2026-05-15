@@ -257,6 +257,54 @@ sealed class UiState<out T> {
 
 ---
 
+## Compose Previews & Figma Snapshot Parity (Mandatory)
+
+Every Composable you ship must declare a `@Preview`. Every screen-level Composable must additionally pass a snapshot test that diffs the rendered preview against the Figma source — the screen must match the Jira/Figma reference by **≥ 80% visual similarity** before the work is considered done.
+
+### Per-Component `@Preview` (No Exceptions)
+- **Every** `@Composable` function — atoms (buttons, chips, inputs), molecules (cards, list rows), organisms (sections, headers), and full screens — ships with at least one `@Preview` in the same file.
+- Preview functions are `private`, named `<Component>Preview`, and wrapped in the app's `MaterialTheme` (or feature theme) so colors/typography match production.
+- For stateful components, pass representative state via parameters or `remember { ... }` inside the preview. Never reach into Hilt/Koin/ViewModel singletons from a preview — inject fakes.
+- For components with multiple visual states (default / pressed / disabled / error / loading / empty), declare one `@Preview` per state, or use `@PreviewParameter` + a `PreviewParameterProvider`.
+- For screen-level Composables, also annotate with `@PreviewScreenSizes`, `@PreviewFontScale`, and `@PreviewLightDark` (from `androidx.compose.ui.tooling.preview`) to verify adaptive behavior, font scaling, and dark mode.
+- Previews must compile and render without runtime errors. A red preview blocks delivery.
+
+```kotlin
+@PreviewLightDark
+@PreviewFontScale
+@Composable
+private fun LoginScreenPreview() {
+    MyPinTheme {
+        LoginScreen(
+            state = LoginUiState.Idle,
+            onSubmit = {},
+        )
+    }
+}
+```
+
+### Screen-Level Figma Snapshot Test (Run After Finishing Each Screen)
+After every screen Composable is implemented, run a snapshot test comparing the rendered preview to the Figma frame and **fix the deltas in a loop** until similarity ≥ 80%.
+
+1. **Capture the Figma reference**: use `download_figma_images` (or `get_screenshot` via the Figma MCP) to pull the canonical PNG for the screen at the design's declared device size. Save it under `app/src/androidTest/assets/figma/<feature>/<screen>.png`.
+2. **Render the Compose preview** via Paparazzi / Roborazzi / Compose UI screenshot test (`createComposeRule()` + `captureToImage()`) at the **same device size** as the Figma frame.
+3. **Diff the two images** with a pixel-similarity comparator (SSIM or per-pixel RGB with tolerance). Compute a similarity score in `[0.0, 1.0]`.
+4. **Threshold**: similarity must be ≥ **0.80 (80%)**. Anything lower fails the test.
+5. **Fix-and-re-run loop**: inspect the diff image, correct spacing / colors / typography / asset placement / alignment, re-run the snapshot. Do not exit the loop while similarity < 80%.
+6. **Snapshot artifacts** live under `app/src/androidTest/snapshots/<feature>/<screen>/` — commit the golden PNG; gitignore the generated diff PNG.
+
+### Acceptance — Jira ≥ 80% Visual Parity
+- No screen is marked done until the snapshot test reports **≥ 80% match** to the Figma frame attached to the Jira story.
+- If the design changes mid-implementation, **refetch via Figma MCP**, regenerate the golden, and re-run the snapshot — do not eyeball changes.
+- Report the final similarity score alongside the deliverable (e.g., `LoginScreen vs Figma node 123:456 → 92% similarity`).
+
+### Failure Modes (Stop and Report)
+- Figma frame is missing on the Jira story → ask the user for the link before writing any UI.
+- Snapshot infra (Paparazzi / Roborazzi / Compose screenshot) is not configured → add it with the user's confirmation **before** claiming the screen is complete.
+- Similarity is stuck below 80% after three fix passes → stop, list the remaining deltas, and ask the user whether to adjust the code or update the design — never force a pixel match by faking the test.
+
+---
+
 ## Koin Module Checklist
 
 Before finalizing the module, verify each line:
@@ -318,6 +366,40 @@ Before outputting any code, mentally execute this checklist. Do **not** skip ite
 - Check for e: or error: lines via grep
 - Fix & re-run in a loop — the AI cannot exit this loop while any red error remains (warnings are allowed, errors are not)
 - Confirm BUILD SUCCESSFUL before presenting code to the user
+
+---
+
+## Code Review (Mandatory — Run `/brutal-review`)
+
+Once Build Verification passes (`BUILD SUCCESSFUL` confirmed), you **must** review the change using the project's brutal-review command at `.claude/commands/brutal-review.md` before presenting code to the user. No change is considered done until it has been through this review and the findings have been addressed.
+
+### How to Run
+- Invoke the slash command `/brutal-review` (which executes `.claude/commands/brutal-review.md`).
+- The command performs a ruthless, multi-perspective review of the most recent change (`jj @-` or `git HEAD`) using four parallel specialist subagents:
+    1. **Core Logic** — algorithm correctness, architecture, coupling.
+    2. **Reliability & Testing** — edge cases, error handling, test coverage.
+    3. **Clean Campground** — readability, style, project conventions (incl. CLAUDE.md).
+    4. **Performance** — allocations, blocking calls, complexity.
+- The review reports findings categorized as **CRITICAL**, **MAJOR**, **MINOR**, or **NIT**, each with a confidence score (0–100).
+
+### Workflow
+1. **Stage the change** so the diff is reviewable: commit via `git commit` (or `jj` equivalent). The review targets the most recent commit.
+2. **Run `/brutal-review`** and wait for the synthesized report.
+3. **Address every finding** in this order:
+    - **CRITICAL** — must fix before presenting code. No exceptions.
+    - **MAJOR** — must fix unless you can justify with a written rationale.
+    - **MINOR** — fix when the fix is small and obvious; otherwise document why deferred.
+    - **NIT** — apply at your discretion; do not let nits block delivery.
+4. **Re-run Build Verification** after any fix (back to `./gradlew assembleDebug`).
+5. **Re-run `/brutal-review`** if a fix touched logic substantially (new diff = new review).
+6. **Only after a clean pass** (zero CRITICAL, zero unresolved MAJOR) may you present the change to the user.
+
+### Rules
+- **Never skip `/brutal-review`** — not even for "trivial" changes. Trivial changes are where bugs hide.
+- **Never mark code complete with open CRITICAL findings.** Stop and fix, or surface the conflict to the user.
+- **Quote the review verdict** in your final response: e.g., `/brutal-review → 0 CRITICAL, 1 MAJOR (addressed: <fix>), 2 MINOR (deferred: <reason>), 3 NIT`. This lets the user see the audit trail.
+- **Do not edit `.claude/commands/brutal-review.md`** to soften checks. If a rule feels wrong, raise it with the user.
+- **If `/brutal-review` cannot run** (e.g., no commit yet, VCS errors, missing tools), stop and report — do not skip the review and ship anyway.
 
 ---
 
