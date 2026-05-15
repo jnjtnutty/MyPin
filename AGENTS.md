@@ -160,6 +160,12 @@ Before outputting any code, mentally execute this checklist. Do **not** skip ite
 - [ ] All `androidx.*`, `kotlinx.coroutines.*`, `org.koin.*`, and `retrofit2.*` imports are explicit and correct
 - [ ] No wildcard imports that could cause ambiguity
 
+## Build Verification (Mandatory — Never Skip)
+- Run "./gradlew assembleDebug" and capture output
+- Check for e: or error: lines via grep
+- Fix & re-run in a loop — the AI cannot exit this loop while any red error remains (warnings are allowed, errors are not)
+- Confirm BUILD SUCCESSFUL before presenting code to the user
+
 ---
 
 ## Anti-Patterns (Never Do These)
