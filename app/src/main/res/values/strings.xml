@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">MyPin</string>
+    <string name="login_tagline">Your private place diary.</string>
+    <string name="login_subtitle">Create &amp; personalize every place that matters to you.</string>
+    <string name="login_email_placeholder">Email</string>
+    <string name="login_password_placeholder">Password</string>
+    <string name="login_sign_in_button">Sign in</string>
+    <string name="login_content_description_hero">Hero background image</string>
 </resources>
