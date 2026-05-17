@@ -881,8 +881,6 @@ private fun TabItem(
 }
 
 @PreviewLightDark
-@PreviewFontScale
-@PreviewScreenSizes
 @Composable
 private fun MapScreenPreview() {
     MyPinTheme {
