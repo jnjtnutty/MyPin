@@ -12,7 +12,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mypin.presentation.login.LoginScreen
 import com.example.mypin.presentation.login.LoginViewModel
-import com.example.mypin.presentation.map.MapScreen
+import com.example.mypin.presentation.main.MainTabScreen
 import com.example.mypin.ui.theme.MyPinTheme
 import org.koin.androidx.compose.koinViewModel
 
@@ -35,7 +35,7 @@ private fun MainContent() {
     var isLoggedIn by remember { mutableStateOf(false) }
 
     if (isLoggedIn) {
-        MapScreen()
+        MainTabScreen()
     } else {
         LoginScreen(
             uiState = uiState,
