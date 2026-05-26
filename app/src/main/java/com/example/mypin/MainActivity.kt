@@ -13,7 +13,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mypin.presentation.login.LoginScreen
 import com.example.mypin.presentation.login.LoginViewModel
 import com.example.mypin.presentation.map.MapScreen
-import com.example.mypin.presentation.map.MapViewModel
 import com.example.mypin.ui.theme.MyPinTheme
 import org.koin.androidx.compose.koinViewModel
 
@@ -32,12 +31,11 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun MainContent() {
     val loginViewModel: LoginViewModel = koinViewModel()
-    val mapViewModel: MapViewModel = koinViewModel()
     val uiState by loginViewModel.uiState.collectAsStateWithLifecycle()
     var isLoggedIn by remember { mutableStateOf(false) }
 
     if (isLoggedIn) {
-        MapScreen(viewModel = mapViewModel)
+        MapScreen()
     } else {
         LoginScreen(
             uiState = uiState,
